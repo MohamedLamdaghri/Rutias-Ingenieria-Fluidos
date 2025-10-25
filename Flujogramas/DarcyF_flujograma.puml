@@ -1,0 +1,47 @@
+@startuml Darcy_Weisbach_activity
+skinparam backgroundColor white
+skinparam activity {
+  BackgroundColor<<io>> #E8F5E9
+  BackgroundColor<<calc>> #E7F3FF
+  BackgroundColor<<decision>> #FFF3E0
+  BorderColor #444444
+}
+
+start
+:'GUI': Leer entradas\nRe, D, k, error, L, Q; <<io>>
+:Constantes\n g = 9.81 m/s^2; <<calc>>
+
+partition "darcy_friction_factor(Re, D, k, error)" {
+  if (Re < 2300?) then (Sí)
+    :f = 64/Re; <<calc>>
+    :method = "Laminar flow"; <<calc>>
+  else (No)
+    :rel_roughness = k/D; <<calc>>
+    :Re_limit = 3500/rel_roughness (si rel_roughness>0, si no = ∞); <<calc>>
+    if (rel_roughness == 0?) then (Sí)
+      :Turbulento liso (Von Karman–Prandtl)\nInicializar f; <<calc>>
+      repeat
+        :f_new = 1/(2 log10(Re*sqrt(f)) - 0.8)^2; <<calc>>
+        :er = |(f_new - f)/f_new|; <<calc>>
+        :f = f_new; <<calc>>
+      repeat while (er > error?) is (Sí)
+      :method = "Turbulent, smooth pipe (VK)"; <<calc>>
+    else (No)
+      if (Re < Re_limit?) then (Sí)
+        :Transición rugoso (Colebrook–White)\nInicializar f; <<calc>>
+        repeat
+          :f_new = 1/(-2 log10((k/D)/3.71 + 2.51/(Re*sqrt(f))))^2; <<calc>>
+          :er = |(f_new - f)/f_new|; <<calc>>
+          :f = f_new; <<calc>>
+        repeat while (er > error?) is (Sí)
+        :method = "Turbulent, transition (Colebrook–White)"; <<calc>>
+      else (No)
+        :Rugoso completamente (VK2)\n f = 1/(2 log10(D/k) + 1.14)^2; <<calc>>
+        :method = "Turbulent, fully rough (VK2)"; <<calc>>
+      endif
+    endif
+  endif
+}
+:Resultado f; <<io>>
+stop
+@enduml
