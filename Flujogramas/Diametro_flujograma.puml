@@ -1,0 +1,46 @@
+
+@startuml Diametro_activity
+skinparam backgroundColor white
+skinparam activity {
+  BackgroundColor<<calc>> #E7F3FF
+  BackgroundColor<<io>> #E8F5E9
+  BackgroundColor<<decision>> #FFF3E0
+  BorderColor #555555
+}
+
+start
+:Leer entradas k (ε), L, Q, hf; <<io>>
+if (Validar L>0, Q>0, hf>0 y k>=0?) then (No)
+  :Mostrar error UI; <<io>>
+  stop
+else (Sí)
+  :ν = μ/ρ; <<calc>>
+  :D = D0_inicial(Q, L, hf, k, ν); <<calc>>
+  :error=100; iter=0; Re=0; f=0.02; régimen=""; <<calc>>
+  repeat
+    :A = π D^2 / 4; V = Q / A; <<calc>>
+    :Re = |ρ V D / μ|; <<calc>>
+    if (Re <= 2300?) then (Sí)
+      :f = 64/Re;\nrégimen="laminar"; <<calc>>
+    else (No)
+      if (k == 0?) then (Sí)
+        :f = f_von_karman_suave(Re);\nrégimen="turb. (liso, VK1)"; <<calc>>
+      else (No)
+        :threshold = 3500*D/k; <<calc>>
+        if (Re < threshold?) then (Sí)
+          :f = f_colebrook(Re,k,D);\nrégimen="turb. (transición, Colebrook)"; <<calc>>
+        else (No)
+          :f = f_von_karman_rugoso(D,k);\nrégimen="turb. (rugoso, VK2)"; <<calc>>
+        endif
+      endif
+    endif
+    :D_new = ((8 f L Q^2)/(π^2 g hf))^(0.2); <<calc>>
+    :error = |(D_new - D)/D_new|*100; <<calc>>
+    :Guardar fila (iter, D, Re, f, error, V, régimen); <<io>>
+    :D = D_new; iter=iter+1; <<calc>>
+  repeat while (error > 0.1 and iter < 200?) is (Sí)
+endif
+:Registrar última fila; <<io>>
+:Mostrar ventana de resultados; <<io>>
+stop
+@enduml
